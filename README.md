@@ -6,26 +6,26 @@ Analysis for shifting regime stoichiometry paper.
 
 This repository contains data analysis workflows for investigating shifting regime stoichiometry in river systems.
 
-## Data
+**Track project progress:** [Shifting-Regimes Paper Project Board](https://github.com/orgs/global-river-chem/projects)
 
-Raw data files should be placed in `data/raw/`. Processed data outputs go in `data/processed/`.
+## Repository Structure
 
-## Analysis
+```
+shifting-regime-stoich/
+├── src/
+│   ├── python/         # Python analysis scripts
+│   └── r/              # R analysis scripts
+├── notebooks/          # Jupyter and R Markdown notebooks
+├── docs/               # Documentation
+├── requirements.txt    # Python package dependencies
+└── README.md          # Project overview
+```
 
-Analysis scripts are organized in:
-- `src/python/` - Python analysis scripts
-- `src/r/` - R analysis scripts
-- `notebooks/` - Jupyter and R Markdown notebooks
+## Getting Started
 
-## Results
+**New collaborators:** See [docs/setup.md](docs/setup.md) for detailed setup instructions including VSCode, Python, R, and Git configuration.
 
-Figures and outputs are saved to:
-- `figures/` - Publication-quality figures
-- `results/` - Analysis results and tables
-
-## Setup
-
-### Python Environment
+### Quick Setup - Python Environment
 
 ```bash
 python -m venv .venv
@@ -33,7 +33,7 @@ source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### R Environment
+### Quick Setup - R Environment
 
 ```r
 # Install renv if not already installed
@@ -43,6 +43,10 @@ install.packages("renv")
 renv::restore()
 ```
 
-## Project Status
+## Contributing
 
-Track project progress and tasks on the [GitHub Projects board](https://github.com/orgs/global-river-chem/projects).
+1. Pull the latest changes: `git pull`
+2. Make your changes in the appropriate directory (`src/python/`, `src/r/`, or `notebooks/`)
+3. Commit and push: `git add .` → `git commit -m "Description"` → `git push`
+
+See the [setup guide](docs/setup.md) for more details.
