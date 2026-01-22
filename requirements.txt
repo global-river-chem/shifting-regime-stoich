@@ -1,0 +1,17 @@
+# Core data science libraries
+numpy
+pandas
+matplotlib
+seaborn
+
+# Scientific computing
+scipy
+scikit-learn
+
+# Geospatial (if needed)
+# geopandas
+# rasterio
+
+# Jupyter
+jupyter
+ipykernel
