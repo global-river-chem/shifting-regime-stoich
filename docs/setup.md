@@ -130,7 +130,3 @@ shifting-regime-stoich/
 ├── requirements.txt    # Python package dependencies
 └── README.md          # Project overview
 ```
-
-## Questions?
-
-Reach out to the team if you have any issues getting set up!
