@@ -114,7 +114,7 @@ git push
 ## 8. Getting Help
 
 - **VSCode Documentation:** https://code.visualstudio.com/docs
-- **Git Basics:** https://git-scm.com/book/en/v2/Getting-Started-Git-Basics
+- **Git Basics:** https://git-scm.com/book/en/v2/Getting-Started-What-is-Git%3F
 - **Python Documentation:** https://docs.python.org/3/
 - **R Documentation:** https://www.r-project.org/other-docs.html
 
