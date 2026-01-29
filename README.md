@@ -6,6 +6,8 @@ Analysis for shifting regime stoichiometry paper.
 
 This repository contains data analysis workflows for investigating shifting regime stoichiometry in river systems.
 
+**Meeting Notes:** [Shared Google Doc](https://docs.google.com/document/d/1zCGwtSoNqc0L-JvHTbFOjYTho3IRfmo_j76OIo6s4Ks/edit?tab=t.0) 
+
 **Track project progress:** [Shifting-Regimes Paper Project Board](https://github.com/orgs/global-river-chem/projects/2)
 
 ## Repository Structure
