@@ -1,7 +1,8 @@
 ## ------------------------------------------------------- ##
 # `SiZer` Workflow
 ## ------------------------------------------------------- ##
-# adapted from: https://github.com/njlyon0/lter_silica-high-latitude/
+# Code to be adapted for shifting-regime-stoich manuscript
+# from: https://github.com/njlyon0/lter_silica-high-latitude/
 
 # Purpose:
 ## Run SiZer workflow on data produced by WRTDS
