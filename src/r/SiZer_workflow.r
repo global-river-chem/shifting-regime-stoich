@@ -14,7 +14,7 @@
 ### B) manually downloaded any needed inputs and put them in a folder named "data"
 
 ## ----------------------------------------- ##
-# Housekeeping ---- sdfasdfg
+# Housekeeping ----
 ## ----------------------------------------- ##
 
 # Need to force an install of HERON to get an updated version?
