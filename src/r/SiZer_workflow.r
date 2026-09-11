@@ -1,68 +1,68 @@
-## ------------------------------------------------------- ##
+# ---- ## ----
 # `SiZer` Workflow
-## ------------------------------------------------------- ##
-# Code to be adapted for shifting-regime-stoich manuscript
+# ---- ## ----
+# code to be adapted for shifting-regime-stoich manuscript
 # from: https://github.com/njlyon0/lter_silica-high-latitude/
 
-# Purpose:
-## Run SiZer workflow on data produced by WRTDS
-## WRTDS = Weighted Regressions on Time, Discharge, and Season
+# purpose:
+# ---- run sizer workflow on data produced by wrtds ----
+# ---- wrtds = weighted regressions on time, discharge, and season ----
 
-# Pre-Requisites:
-## This script assumes you've done one of the following options:
-### A) run the "00_data-download.R" script
-### B) manually downloaded any needed inputs and put them in a folder named "data"
+# pre-requisites:
+# ---- this script assumes you've done one of the following options: ----
+# ---- a) run the "00_data-download.r" script ----
+# ---- b) manually downloaded any needed inputs and put them in a folder named "data" ----
 
-## ----------------------------------------- ##
-# Housekeeping ----
-## ----------------------------------------- ##
+# ---- ## ----
+# ---- housekeeping ----
+# ---- ## ----
 
-# Need to force an install of HERON to get an updated version?
+# need to force an install of heron to get an updated version?
 # devtools::install_github("lter/HERON", force = T)
 
-# Load libraries
+# load libraries
 # install.packages("librarian")
 librarian::shelf(tidyverse, SiZer, supportR, lter / HERON)
 
-# Clear environment
+# clear environment
 rm(list = ls())
 gc()
 
-# Make needed folder(s)
+# make needed folder(s)
 dir.create(path = file.path("data"), showWarnings = F)
 dir.create(path = file.path("graphs"), showWarnings = F)
 
-# Download the data you need (or put it in the "data" folder manually)
-## Note that you *must* have access to the relevant Shared Google Drive for this to work
+# download the data you need (or put it in the "data" folder manually)
+# ---- note that you *must* have access to the relevant shared google drive for this to work ----
 # source("00_data-download.R")
 
-# Load custom functions
+# load custom functions
 purrr::walk(
   .x = dir(path = file.path("tools"), pattern = "fxn_"),
   .f = ~ source(file.path("tools", .x))
 )
 
-## ----------------------------------------- ##
-# General SiZer Prep ----
-## ----------------------------------------- ##
+# ---- ## ----
+# ---- general sizer prep ----
+# ---- ## ----
 
-# What is the temporal resolution of the WRTDS output data?
-## *MUST* be one of "annual", "seasonal", or "monthly"
+# what is the temporal resolution of the wrtds output data?
+# ---- *must* be one of "annual", "seasonal", or "monthly" ----
 temporal_res <- "monthly"
 
-# Flexibly determine the needed resolution of WRTDS output
+# flexibly determine the needed resolution of wrtds output
 if (stringr::str_detect(string = temporal_res, pattern = "annual")) {
   wrtds_file <- "Full_Results_WRTDS_annual.csv"
 } else {
   wrtds_file <- "Full_Results_WRTDS_monthly.csv"
 }
 
-# Read in data & rename a column
+# read in data & rename a column
 wrtds_v1 <- read.csv(file = file.path("data", wrtds_file))
 
-# Remove unwanted data / data that don't meet needed criteria
+# remove unwanted data / data that don't meet needed criteria
 wrtds_v2 <- wrtds_v1 %>%
-  # Keep only LTERs at high latitudes
+  # keep only lters at high latitudes
   dplyr::filter(
     LTER %in%
       c(
@@ -75,7 +75,7 @@ wrtds_v2 <- wrtds_v1 %>%
         "Swedish Goverment"
       )
   ) %>%
-  # Drop some problem sites within wanted LTERs
+  # drop some problem sites within wanted lters
   dplyr::filter(
     !Stream_Name %in%
       c(
@@ -101,18 +101,18 @@ wrtds_v2 <- wrtds_v1 %>%
         "Raan Helsingborg"
       )
   ) %>%
-  # Calculate number of years per stream
+  # calculate number of years per stream
   dplyr::group_by(LTER, Stream_Name) %>%
   dplyr::mutate(num_years = length(unique(Year)), .after = Year) %>%
   dplyr::ungroup() %>%
-  # Keep only streams with more years than some threshold
+  # keep only streams with more years than some threshold
   dplyr::filter(num_years >= 12) %>%
-  # Drop the year number column
+  # drop the year number column
   dplyr::select(-num_years)
 
-# Do some unit conversions / tidying
+# do some unit conversions / tidying
 wrtds_v3 <- wrtds_v2 %>%
-  # Convert all of the 10^6 columns
+  # convert all of the 10^6 columns
   dplyr::mutate(
     dplyr::across(
       .cols = dplyr::contains("10_6k"),
@@ -123,12 +123,12 @@ wrtds_v3 <- wrtds_v2 %>%
       )
     )
   ) %>%
-  # Rename those columns to reflect their new units
+  # rename those columns to reflect their new units
   dplyr::rename_with(
     .fn = ~ gsub(pattern = "10_6k", replacement = "k", x = .x),
     .cols = dplyr::contains("10_6k")
   ) %>%
-  # Tidy the chemical ratio names
+  # tidy the chemical ratio names
   dplyr::mutate(
     chemical = dplyr::case_when(
       chemical == "Si:DIN" ~ "Si_DIN",
@@ -136,28 +136,28 @@ wrtds_v3 <- wrtds_v2 %>%
       TRUE ~ chemical
     )
   ) %>%
-  # Rename stream column
+  # rename stream column
   dplyr::rename(stream = Stream_Name)
 
-# Check structure
+# check structure
 dplyr::glimpse(wrtds_v3)
 
-# Check that worked as desired
+# check that worked as desired
 range(wrtds_v2$Yield_10_6kmol_yr_km2, na.rm = T)
 range(wrtds_v3$Yield_kmol_yr_km2, na.rm = T)
 
-# How many streams / LTER remaining?
+# how many streams / lter remaining?
 wrtds_v3 %>%
   dplyr::group_by(LTER) %>%
   dplyr::summarize(stream_ct = length(unique(stream)), .groups = "keep")
 
-# Check lost/gained columns
+# check lost/gained columns
 supportR::diff_check(old = names(wrtds_v1), new = names(wrtds_v3))
 
-# Duplicate the data object to reduce risk of accident
+# duplicate the data object to reduce risk of accident
 wrtds_v4 <- wrtds_v3
 
-# If this dataset does not contain month/season columns (i.e., is annual) add them
+# if this dataset does not contain month/season columns (i.e., is annual) add them
 if (!"Month" %in% names(wrtds_v3)) {
   wrtds_v4 <- dplyr::mutate(.data = wrtds_v4, Month = "x", .before = Year)
 }
@@ -165,7 +165,7 @@ if (!"season" %in% names(wrtds_v3)) {
   wrtds_v4 <- dplyr::mutate(.data = wrtds_v4, season = "x", .before = Year)
 }
 
-# Check structure
+# check structure
 dplyr::glimpse(wrtds_v4)
 
 # Remove months from McMurdo for which there shouldn't be data
@@ -175,25 +175,25 @@ wrtds_v5 <- wrtds_v4 %>%
       (LTER == "MCM" & Month %in% c("x", 12, 1, 2))
   )
 
-# Check that worked
+# check that worked
 wrtds_v5 %>%
   dplyr::filter(LTER == "MCM") %>%
   dplyr::pull(Month) %>%
   unique()
 
-## ----------------------------------------- ##
-# Variable Selection ----
-## ----------------------------------------- ##
+# ---- ## ----
+# ---- variable selection ----
+# ---- ## ----
 
-# Make a "final" version of the WRTDS data
+# make a "final" version of the wrtds data
 wrtds_v99 <- wrtds_v5
 
-# Choose response/explanatory variables of interest & focal chemical
+# choose response/explanatory variables of interest & focal chemical
 response <- "Yield"
 explanatory <- "Year"
 element <- "DSi"
 
-# Check that combination of variables works
+# check that combination of variables works
 var_check(
   data = wrtds_v5,
   chem = element,
@@ -201,145 +201,145 @@ var_check(
   exp_var = explanatory
 )
 
-# Prepare just the desired pieces of information
+# prepare just the desired pieces of information
 wrtds_focal <- wrtds_v99 %>%
   dplyr::select(LTER:chemical, dplyr::starts_with(response)) %>%
   dplyr::filter(chemical == element)
 
-# Check structure
+# check structure
 dplyr::glimpse(wrtds_focal)
 
-# Create needed data sub-folder(s)
-## Data output
+# create needed data sub-folder(s)
+# ---- data output ----
 (data_outs <- paste0("sizer-outs_", temporal_res))
 dir.create(path = file.path("data", data_outs), showWarnings = F)
-## Diagnostic graph outputs
-(graph_outs = paste(temporal_res, response, element, sep = "_"))
+# ---- diagnostic graph outputs ----
+(graph_outs <- paste(temporal_res, response, element, sep = "_"))
 dir.create(path = file.path("graphs", graph_outs), showWarnings = F)
 
-## ----------------------------------------- ##
-# Core SiZer Workflow ----
-## ----------------------------------------- ##
+# ---- ## ----
+# ---- core sizer workflow ----
+# ---- ## ----
 
-# Make some empty lists to store different bits of information
+# make some empty lists to store different bits of information
 data_list <- list()
 statistic_list <- list()
 estimate_list <- list()
 
-# Loop across streams
+# loop across streams
 for (place in unique(wrtds_focal$stream)) {
   # for(place in "Iijoki Raasakan voimal"){
 
-  # Starting message
+  # starting message
   message("Processing begun for ", element, " ", response, " at ", place)
 
-  # Make a shorter place name
+  # make a shorter place name
   place_short <- stringr::str_sub(string = place, start = 1, end = 8)
 
-  # Subset to just this stream
+  # subset to just this stream
   wrtds_place <- dplyr::filter(.data = wrtds_focal, stream == place)
 
-  # Handle each temporal resolution separately
-  ## Annual
+  # handle each temporal resolution separately
+  # ---- annual ----
   if (temporal_res == "annual") {
-    # Simply duplicate existing object
+    # simply duplicate existing object
     wrtds_core <- wrtds_place
 
-    # Make some housekeeping objects that'll be useful in the processing script
+    # make some housekeeping objects that'll be useful in the processing script
     focal_season <- "x"
     focal_month <- "x"
 
-    # And run workflow script
+    # and run workflow script
     source(file.path("tools", "flow_core-sizer-process.R"))
 
-    ## Seasonal
+    # ---- seasonal ----
   } else if (temporal_res == "seasonal") {
-    # Make needed housekeeping object
+    # make needed housekeeping object
     focal_month <- "x"
 
-    # Process the WRTDS place object to get one row / season
+    # process the wrtds place object to get one row / season
     wrtds_place_v2 <- wrtds_place %>%
-      # Remove all instances where season info is missing
+      # remove all instances where season info is missing
       dplyr::filter(!is.na(season)) %>%
-      # Drop some unwanted columns
+      # drop some unwanted columns
       dplyr::select(-nDays, -DecYear) %>%
-      # Flip to long format to get all response variables into a single column
+      # flip to long format to get all response variables into a single column
       tidyr::pivot_longer(
         cols = dplyr::starts_with(response),
         names_to = "var",
         values_to = "value"
       ) %>%
-      # Group by everything *except month* and average response values
+      # group by everything *except month* and average response values
       dplyr::group_by(LTER, stream, drainSqKm, season, Year, chemical, var) %>%
       dplyr::summarize(value = mean(value, na.rm = T), .groups = "keep") %>%
       dplyr::ungroup() %>%
-      # Flip back to wide format
+      # flip back to wide format
       tidyr::pivot_wider(names_from = var, values_from = value)
 
-    # Loop across seasons
+    # loop across seasons
     for (focal_season in unique(wrtds_place_v2$season)) {
-      # Message current season
+      # message current season
       message("Working on season: ", focal_season)
 
-      # Creating a season-specific subset
+      # creating a season-specific subset
       wrtds_core <- dplyr::filter(
         .data = wrtds_place_v2,
         season == focal_season
       )
 
-      # *Then* running the workflow script
+      # *then* running the workflow script
       source(file.path("tools", "flow_core-sizer-process.R"))
-    } # Close season loop
+    } # close season loop
 
-    ## Monthly
+    # ---- monthly ----
   } else if (temporal_res == "monthly") {
-    # Make needed housekeeping object
+    # make needed housekeeping object
     focal_season <- "x"
 
-    # Process the WRTDS place object to get one row / month
+    # process the wrtds place object to get one row / month
     wrtds_place_v2 <- wrtds_place %>%
-      # Remove all instances where month info is missing
+      # remove all instances where month info is missing
       dplyr::filter(!is.na(Month)) %>%
-      # Drop some unwanted columns
+      # drop some unwanted columns
       dplyr::select(-nDays, -DecYear) %>%
-      # Flip to long format to get all response variables into a single column
+      # flip to long format to get all response variables into a single column
       tidyr::pivot_longer(
         cols = dplyr::starts_with(response),
         names_to = "var",
         values_to = "value"
       ) %>%
-      # Group by everything *except season* and average response values
+      # group by everything *except season* and average response values
       dplyr::group_by(LTER, stream, drainSqKm, Month, Year, chemical, var) %>%
       dplyr::summarize(value = mean(value, na.rm = T), .groups = "keep") %>%
       dplyr::ungroup() %>%
-      # Flip back to wide format
+      # flip back to wide format
       tidyr::pivot_wider(names_from = var, values_from = value)
 
-    # Loop across months
+    # loop across months
     for (focal_month in unique(wrtds_place_v2$Month)) {
-      # Message current month
+      # message current month
       message("Working on month: ", focal_month)
 
-      # Creating a month-specific subset
+      # creating a month-specific subset
       wrtds_core <- dplyr::filter(.data = wrtds_place_v2, Month == focal_month)
 
-      # *Then* running the workflow script
+      # *then* running the workflow script
       source(file.path("tools", "flow_core-sizer-process.R"))
-    } # Close month loop
+    } # close month loop
   } else {
     stop(
       "Unrecognized temporal resolution! Replace with one of 'annual', 'seasonal', or 'monthly'"
     )
   }
-} # Close processing loop
+} # close processing loop
 
-## ----------------------------------------- ##
-# Process Outputs ----
-## ----------------------------------------- ##
+# ---- ## ----
+# ---- process outputs ----
+# ---- ## ----
 
-# Process the data first
+# process the data first
 data_actual <- purrr::list_rbind(x = data_list) %>%
-  # Tweak the '-Inf to Inf' entry for consistency with other dataframes and rename column
+  # tweak the '-inf to inf' entry for consistency with other dataframes and rename column
   dplyr::mutate(
     section = ifelse(
       groups == "(-Inf, Inf]",
@@ -348,77 +348,77 @@ data_actual <- purrr::list_rbind(x = data_list) %>%
     ),
     .after = LTER
   ) %>%
-  # Make end/start actually numbers and calculate duration of group
+  # make end/start actually numbers and calculate duration of group
   dplyr::mutate(
     section_start = as.numeric(start),
     section_end = as.numeric(end),
     section_duration = section_end - section_start,
     .after = section_end
   ) %>%
-  # Remove redundant columns
+  # remove redundant columns
   dplyr::select(-groups, -start, -end) %>%
-  # Drop non-unique rows
+  # drop non-unique rows
   dplyr::distinct()
 
-# Check structure
+# check structure
 dplyr::glimpse(data_actual)
 
-# Wrangle the estimate outputs
+# wrangle the estimate outputs
 estimate_actual <- purrr::list_rbind(x = estimate_list) %>%
-  # Remove intercept information
+  # remove intercept information
   dplyr::filter(term != "(Intercept)") %>%
-  # Drop term column now that it's all "data[[x]]"
+  # drop term column now that it's all "data[[x]]"
   dplyr::select(-term) %>%
-  # Rename some columns for clarity
+  # rename some columns for clarity
   dplyr::rename(
     std_error = std.error,
     term_statistic = statistic,
     term_p_value = p.value
   ) %>%
-  # Drop non-unique rows
+  # drop non-unique rows
   dplyr::distinct()
 
-# Check structure
+# check structure
 dplyr::glimpse(estimate_actual)
 
-# Wrangle statistics outputs
+# wrangle statistics outputs
 statistic_actual <- purrr::list_rbind(x = statistic_list) %>%
-  # Replace periods with underscores in column names
+  # replace periods with underscores in column names
   dplyr::rename_with(
     .fn = ~ gsub(pattern = "\\.", replacement = "_", x = .x),
     .cols = dplyr::contains(".")
   ) %>%
-  # Rename ambiguously named columns
+  # rename ambiguously named columns
   dplyr::rename(F_statistic = statistic, test_p_value = p_value) %>%
-  # Drop non-unique rows
+  # drop non-unique rows
   dplyr::distinct()
 
-# Check structure
+# check structure
 dplyr::glimpse(statistic_actual)
 
-## ----------------------------------------- ##
-# Combine Outputs ----
-## ----------------------------------------- ##
+# ---- ## ----
+# ---- combine outputs ----
+# ---- ## ----
 
-# Combine these three types of output
+# combine these three types of output
 combo_v1 <- data_actual %>%
-  # Attach statistical information
+  # attach statistical information
   dplyr::left_join(
     y = statistic_actual,
     by = c("sizer_bandwidth", "stream", "section", "season", "Month")
   ) %>%
-  # Attach estimate information too
+  # attach estimate information too
   dplyr::left_join(
     y = estimate_actual,
     by = c("sizer_bandwidth", "stream", "section", "season", "Month")
   )
 
-# Check structure
+# check structure
 dplyr::glimpse(combo_v1)
 
-# Process this to make navigating it more intuitive/easier
+# process this to make navigating it more intuitive/easier
 combo_v2 <- combo_v1 %>%
-  # Reorder 'site information' (i.e., grouping columns) columns to the left
+  # reorder 'site information' (i.e., grouping columns) columns to the left
   dplyr::relocate(
     sizer_bandwidth,
     LTER,
@@ -433,9 +433,9 @@ combo_v2 <- combo_v1 %>%
     dplyr::starts_with("section_"),
     .before = dplyr::everything()
   ) %>%
-  # Rename columns as needed
+  # rename columns as needed
   dplyr::rename(sizer_slope = slope_type) %>%
-  # Fix column class issues
+  # fix column class issues
   dplyr::mutate(
     sizer_bandwidth = as.numeric(sizer_bandwidth),
     Year = as.numeric(Year)
@@ -448,7 +448,7 @@ combo_v2 <- combo_v1 %>%
     .cols = dplyr::contains(response),
     .fns = as.numeric
   )) %>%
-  # Reorder statistical columns more informatively
+  # reorder statistical columns more informatively
   dplyr::relocate(
     F_statistic,
     test_p_value,
@@ -471,19 +471,19 @@ combo_v2 <- combo_v1 %>%
     term_p_value,
     .after = dplyr::everything()
   ) %>%
-  # Rename slope estimate column more clearly
+  # rename slope estimate column more clearly
   dplyr::rename(slope_estimate = estimate, slope_std_error = std_error)
 
-# Check structure
+# check structure
 dplyr::glimpse(combo_v2)
 
-# Create some other desired columns
+# create some other desired columns
 combo_v3 <- combo_v2 %>%
-  # Simplify river names slightly
+  # simplify river names slightly
   dplyr::mutate(
     site_simp = gsub(pattern = " at", replacement = " ", x = stream)
   ) %>%
-  # Simplify other place information column contents
+  # simplify other place information column contents
   dplyr::mutate(
     LTER_simp = ifelse(
       nchar(LTER) <= 4,
@@ -498,7 +498,7 @@ combo_v3 <- combo_v2 %>%
     LTER_stream = paste0(LTER_simp, "_", site_simp),
     .after = stream
   ) %>%
-  # Drop intermediary columns
+  # drop intermediary columns
   dplyr::select(-dplyr::ends_with("_simp")) %>%
   # Calculate average 'response' per SiZer section
   dplyr::group_by(sizer_bandwidth, stream, chemical, section) %>%
@@ -508,7 +508,7 @@ combo_v3 <- combo_v2 %>%
     .before = section
   ) %>%
   dplyr::ungroup() %>%
-  # Express slope as a percent change of average response
+  # express slope as a percent change of average response
   dplyr::mutate(
     percent_change = (slope_estimate / mean_response) * 100,
     .after = sd_response
@@ -518,10 +518,10 @@ combo_v3 <- combo_v2 %>%
 length(unique(paste0(combo_v3$LTER, combo_v3$stream)))
 length(unique(combo_v3$LTER_stream))
 
-# Check structure
+# check structure
 dplyr::glimpse(combo_v3)
 
-# Make sure no columns are lost
+# make sure no columns are lost
 supportR::diff_check(
   old = unique(c(
     names(data_actual),
@@ -531,19 +531,19 @@ supportR::diff_check(
   new = names(combo_v3)
 )
 
-## ----------------------------------------- ##
-# Export ----
-## ----------------------------------------- ##
+# ---- ## ----
+# ---- export ----
+# ---- ## ----
 
-# Tweak the 'stream' column name to be more explicit
+# tweak the 'stream' column name to be more explicit
 combo_v4 <- combo_v3 %>%
   dplyr::rename(Stream_Name = stream)
 
-# Final structure check
+# final structure check
 dplyr::glimpse(combo_v4)
 
-# Export that combination object locally
-## Can use special folder name as *file name* to ensure informative naming conventions
+# export that combination object locally
+# ---- can use special folder name as *file name* to ensure informative naming conventions ----
 write.csv(
   x = combo_v4,
   na = "",
@@ -551,4 +551,4 @@ write.csv(
   file = file.path("data", data_outs, paste0("sizer-outs_", graph_outs, ".csv"))
 )
 
-# End ----
+# ---- end ----
